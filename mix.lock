@@ -1,0 +1,4 @@
+%{
+  "telemetry": {:hex, :telemetry, "0.4.1", "ae2718484892448a24470e6aa341bc847c3277bfb8d4e9289f7474d752c09c7f", [:rebar3], [], "hexpm", "4738382e36a0a9a2b6e25d67c960e40e1a2c95560b9f936d8e29de8cd858480f"},
+  "telemetry_metrics": {:hex, :telemetry_metrics, "0.4.1", "71f830b0b74932c98ff6e9a1a1d653ba2b67af6ab94f221930aded7b8b1ed73c", [:mix], [{:telemetry, "~> 0.4", [hex: :telemetry, repo: "hexpm", optional: false]}], "hexpm", "0a1e874fd1a934877cd9a8a220e6744b8a2fdcb6c45c150fd98890a618209ebf"},
+}

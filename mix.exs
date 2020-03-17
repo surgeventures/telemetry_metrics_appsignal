@@ -18,6 +18,9 @@ defmodule TelemetryMetricsAppsignal.MixProject do
   end
 
   defp deps do
-    []
+    [
+      {:telemetry, "~> 0.4"},
+      {:telemetry_metrics, "~> 0.4"}
+    ]
   end
 end

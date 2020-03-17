@@ -1,18 +1,33 @@
 defmodule TelemetryMetricsAppsignal do
-  @moduledoc """
-  Documentation for `TelemetryMetricsAppsignal`.
-  """
+  require Logger
 
-  @doc """
-  Hello world.
+  alias Telemetry.Metrics.Counter
+  alias Telemetry.Metrics.Distribution
+  alias Telemetry.Metrics.LastValue
+  alias Telemetry.Metrics.Sum
+  alias Telemetry.Metrics.Summary
 
-  ## Examples
+  @handler_prefix "telemetry_metrics_appsignal"
 
-      iex> TelemetryMetricsAppsignal.hello()
-      :world
+  @type metric ::
+          Counter.t()
+          | Distribution.t()
+          | LastValue.t()
+          | Sum.t()
+          | Summary.t()
 
-  """
-  def hello do
-    :world
+  @spec init([metric]) :: no_return()
+  def init(metrics) do
+    metrics
+    |> Enum.group_by(& &1.event_name)
+    |> Enum.each(fn {event_name, metrics} ->
+      handler_id = Enum.join([@handler_prefix | event_name], "_")
+
+      :telemetry.attach(handler_id, event_name, &handle_event/4, metrics: metrics)
+    end)
+  end
+
+  defp handle_event(_, _, _, _) do
+    nil
   end
 end
