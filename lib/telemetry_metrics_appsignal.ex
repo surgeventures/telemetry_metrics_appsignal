@@ -70,5 +70,9 @@ defmodule TelemetryMetricsAppsignal do
     |> @appsignal.increment_counter(measurements[metric.measurement], metadata)
   end
 
+  defp send_metric(metric, _measurements, _metadata) do
+    Logger.warn("Ignoring unsupported metric #{inspect(metric)}")
+  end
+
   defp prepare_key(%{name: metric_name}), do: Enum.join(metric_name, ".")
 end

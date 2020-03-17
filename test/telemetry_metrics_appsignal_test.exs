@@ -11,6 +11,7 @@ defmodule TelemetryMetricsAppsignalTest do
   alias Telemetry.Metrics.Summary
 
   @handler_prefix "telemetry_metrics_appsignal"
+  @moduletag capture_log: true
 
   setup :verify_on_exit!
 
@@ -117,6 +118,13 @@ defmodule TelemetryMetricsAppsignalTest do
 
     :telemetry.execute([:db, :query], %{duration: 99}, %{statement: "SELECT"})
 
+    TelemetryMetricsAppsignal.detach([metric])
+  end
+
+  test "handles unsupported metrics" do
+    metric = distribution("web.request.duration", buckets: [100, 200, 400])
+    TelemetryMetricsAppsignal.attach([metric])
+    :telemetry.execute([:web, :request], %{duration: 99}, %{})
     TelemetryMetricsAppsignal.detach([metric])
   end
 end
