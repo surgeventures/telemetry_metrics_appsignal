@@ -15,7 +15,7 @@ defmodule TelemetryMetricsAppsignalTest do
 
   setup :verify_on_exit!
 
-  test "attaching telemetry handlers" do
+  test "attaching and detaching telemetry handlers" do
     metrics = [
       counter("web.request.count"),
       distribution("web.request.duration", buckets: [100, 200, 400]),
@@ -45,9 +45,13 @@ defmodule TelemetryMetricsAppsignalTest do
     end)
 
     TelemetryMetricsAppsignal.detach(metrics)
+    attached_handlers = :telemetry.list_handlers([])
+    assert attached_handlers == []
   end
 
   test "reporting counter metrics" do
+    parent = self()
+
     # `Telemetry.Metrics.Counter` and `Telemetry.Metrics.Sum`
     # both map to AppSignal's counter metric
     metrics = [
@@ -57,32 +61,38 @@ defmodule TelemetryMetricsAppsignalTest do
 
     TelemetryMetricsAppsignal.attach(metrics)
 
-    expect(AppsignalMock, :increment_counter, fn key, value, tags ->
-      assert key == "web.request.count"
-      assert value == 1
-      assert tags == %{controller: "HomeController", action: "index"}
-      :ok
+    ref = make_ref()
+
+    expect(AppsignalMock, :increment_counter, fn
+      "web.request.count", 1, %{controller: "HomeController", action: "index"} ->
+        send(parent, {ref, :called})
+        :ok
     end)
 
     :telemetry.execute([:web, :request], %{}, %{controller: "HomeController", action: "index"})
+    assert_receive {^ref, :called}
 
     # Measurements should be ignored for counter metric
-    expect(AppsignalMock, :increment_counter, fn key, value, _tags ->
-      assert key == "web.request.count"
-      assert value == 1
+    ref = make_ref()
+
+    expect(AppsignalMock, :increment_counter, fn "web.request.count", 1, _tags ->
+      send(parent, {ref, :called})
       :ok
     end)
 
     :telemetry.execute([:web, :request], %{count: 5}, %{})
+    assert_receive {^ref, :called}
 
-    expect(AppsignalMock, :increment_counter, fn key, value, tags ->
-      assert key == "worker.events.consumed"
-      assert value == 11
-      assert tags == %{queue: "payments"}
-      :ok
+    ref = make_ref()
+
+    expect(AppsignalMock, :increment_counter, fn
+      "worker.events.consumed", 11, %{queue: "payments"} ->
+        send(parent, {ref, :called})
+        :ok
     end)
 
     :telemetry.execute([:worker, :events], %{consumed: 11}, %{queue: "payments"})
+    assert_receive {^ref, :called}
 
     TelemetryMetricsAppsignal.detach(metrics)
   end
@@ -92,14 +102,17 @@ defmodule TelemetryMetricsAppsignalTest do
     metric = last_value("worker.queue.length")
     TelemetryMetricsAppsignal.attach([metric])
 
-    expect(AppsignalMock, :set_gauge, fn key, value, tags ->
-      assert key == "worker.queue.length"
-      assert value == 42
-      assert tags == %{queue: "mailing"}
-      :ok
+    parent = self()
+    ref = make_ref()
+
+    expect(AppsignalMock, :set_gauge, fn
+      "worker.queue.length", 42, %{queue: "mailing"} ->
+        send(parent, {ref, :called})
+        :ok
     end)
 
     :telemetry.execute([:worker, :queue], %{length: 42}, %{queue: "mailing"})
+    assert_receive {^ref, :called}
 
     TelemetryMetricsAppsignal.detach([metric])
   end
@@ -109,22 +122,32 @@ defmodule TelemetryMetricsAppsignalTest do
     metric = summary("db.query.duration")
     TelemetryMetricsAppsignal.attach([metric])
 
-    expect(AppsignalMock, :add_distribution_value, fn key, value, tags ->
-      assert key == "db.query.duration"
-      assert value == 99
-      assert tags == %{statement: "SELECT"}
-      :ok
+    parent = self()
+    ref = make_ref()
+
+    expect(AppsignalMock, :add_distribution_value, fn
+      "db.query.duration", 99, %{statement: "SELECT"} ->
+        send(parent, {ref, :called})
+        :ok
     end)
 
     :telemetry.execute([:db, :query], %{duration: 99}, %{statement: "SELECT"})
+    assert_receive {^ref, :called}
 
     TelemetryMetricsAppsignal.detach([metric])
   end
 
-  test "handles unsupported metrics" do
+  test "handling unsupported metrics" do
     metric = distribution("web.request.duration", buckets: [100, 200, 400])
     TelemetryMetricsAppsignal.attach([metric])
     :telemetry.execute([:web, :request], %{duration: 99}, %{})
+    TelemetryMetricsAppsignal.detach([metric])
+  end
+
+  test "handling missing measurement" do
+    metric = summary("db.query.duration")
+    TelemetryMetricsAppsignal.attach([metric])
+    :telemetry.execute([:db, :query], %{}, %{})
     TelemetryMetricsAppsignal.detach([metric])
   end
 end

@@ -47,32 +47,57 @@ defmodule TelemetryMetricsAppsignal do
   end
 
   defp send_metric(%Counter{} = metric, _measurements, metadata) do
-    metric
-    |> prepare_key()
-    |> @appsignal.increment_counter(1, metadata)
+    call_appsignal(:increment_counter, metric.name, 1, metadata)
   end
 
   defp send_metric(%Summary{} = metric, measurements, metadata) do
-    metric
-    |> prepare_key()
-    |> @appsignal.add_distribution_value(measurements[metric.measurement], metadata)
+    call_appsignal(
+      :add_distribution_value,
+      metric.name,
+      measurements[metric.measurement],
+      metadata
+    )
   end
 
   defp send_metric(%LastValue{} = metric, measurements, metadata) do
-    metric
-    |> prepare_key()
-    |> @appsignal.set_gauge(measurements[metric.measurement], metadata)
+    call_appsignal(
+      :set_gauge,
+      metric.name,
+      measurements[metric.measurement],
+      metadata
+    )
   end
 
   defp send_metric(%Sum{} = metric, measurements, metadata) do
-    metric
-    |> prepare_key()
-    |> @appsignal.increment_counter(measurements[metric.measurement], metadata)
+    call_appsignal(
+      :increment_counter,
+      metric.name,
+      measurements[metric.measurement],
+      metadata
+    )
   end
 
   defp send_metric(metric, _measurements, _metadata) do
     Logger.warn("Ignoring unsupported metric #{inspect(metric)}")
   end
 
-  defp prepare_key(%{name: metric_name}), do: Enum.join(metric_name, ".")
+  defp call_appsignal(function_name, key, value, tags) when is_list(key) do
+    call_appsignal(function_name, Enum.join(key, "."), value, tags)
+  end
+
+  defp call_appsignal(function_name, key, value, tags)
+       when is_binary(key) and is_number(value) and is_map(tags) do
+    apply(@appsignal, function_name, [key, value, tags])
+  end
+
+  defp call_appsignal(function_name, key, value, tags) do
+    Logger.warn("""
+    Attempted to send metrics invalid with AppSignal library: \
+    #{inspect(function_name)}(\
+    #{inspect(key)}, \
+    #{inspect(value)}, \
+    #{inspect(tags)}\
+    )
+    """)
+  end
 end
