@@ -17,23 +17,31 @@ defmodule TelemetryMetricsAppsignal do
           | Sum.t()
           | Summary.t()
 
-  @spec attach([metric]) :: no_return()
-  def attach(metrics) do
+  @type option :: {:namespace, String.t()}
+
+  @spec attach([metric], keyword(option)) :: no_return()
+  def attach(metrics, opts \\ []) do
+    namespace = Keyword.get(opts, :namespace)
+    handler_prefix = prepare_handler_prefix(namespace)
+
     metrics
     |> Enum.group_by(& &1.event_name)
     |> Enum.each(fn {event_name, metrics} ->
-      handler_id = Enum.join([@handler_prefix | event_name], "_")
+      handler_id = Enum.join(handler_prefix ++ event_name, "_")
 
       :telemetry.attach(handler_id, event_name, &handle_event/4, metrics: metrics)
     end)
   end
 
-  @spec detach([metric]) :: no_return()
-  def detach(metrics) do
+  @spec detach([metric], keyword(option)) :: no_return()
+  def detach(metrics, opts \\ []) do
+    namespace = Keyword.get(opts, :namespace)
+    handler_prefix = prepare_handler_prefix(namespace)
+
     metrics
     |> Enum.map(& &1.event_name)
     |> Enum.each(fn event_name ->
-      handler_id = Enum.join([@handler_prefix | event_name], "_")
+      handler_id = Enum.join(handler_prefix ++ event_name, "_")
       :telemetry.detach(handler_id)
     end)
   end
@@ -46,6 +54,10 @@ defmodule TelemetryMetricsAppsignal do
       tags = prepare_metric_tags(metric.tags, metadata)
       send_metric(metric, value, tags)
     end)
+  end
+
+  defp prepare_handler_prefix(namespace) do
+    [@handler_prefix, namespace] |> Enum.reject(&is_nil/1)
   end
 
   defp prepare_metric_value(measurement, measurements)

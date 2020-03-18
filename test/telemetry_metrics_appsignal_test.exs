@@ -49,6 +49,28 @@ defmodule TelemetryMetricsAppsignalTest do
     assert attached_handlers == []
   end
 
+  test "allwing to configure handler namespace" do
+    metric = counter("web.request.count")
+    TelemetryMetricsAppsignal.attach([metric], namespace: "api")
+    TelemetryMetricsAppsignal.attach([metric], namespace: "rpc")
+    attached_handlers = :telemetry.list_handlers([])
+
+    handler_ids =
+      attached_handlers
+      |> Enum.map(& &1.id)
+      |> Enum.sort()
+
+    assert handler_ids == [
+             "telemetry_metrics_appsignal_api_web_request",
+             "telemetry_metrics_appsignal_rpc_web_request"
+           ]
+
+    TelemetryMetricsAppsignal.detach([metric], namespace: "api")
+    TelemetryMetricsAppsignal.detach([metric], namespace: "rpc")
+    attached_handlers = :telemetry.list_handlers([])
+    assert attached_handlers == []
+  end
+
   test "reporting counter metrics" do
     parent = self()
 
