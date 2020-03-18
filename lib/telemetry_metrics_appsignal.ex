@@ -43,7 +43,8 @@ defmodule TelemetryMetricsAppsignal do
 
     Enum.each(metrics, fn metric ->
       value = prepare_metric_value(metric.measurement, measurements)
-      send_metric(metric, value, metadata)
+      tags = prepare_metric_tags(metric.tags, metadata)
+      send_metric(metric, value, tags)
     end)
   end
 
@@ -60,38 +61,42 @@ defmodule TelemetryMetricsAppsignal do
 
   defp prepare_metric_value(_, _), do: nil
 
-  defp send_metric(%Counter{} = metric, _value, metadata) do
-    call_appsignal(:increment_counter, metric.name, 1, metadata)
+  defp prepare_metric_tags(tags, metadata) do
+    Map.take(metadata, tags)
   end
 
-  defp send_metric(%Summary{} = metric, value, metadata) do
+  defp send_metric(%Counter{} = metric, _value, tags) do
+    call_appsignal(:increment_counter, metric.name, 1, tags)
+  end
+
+  defp send_metric(%Summary{} = metric, value, tags) do
     call_appsignal(
       :add_distribution_value,
       metric.name,
       value,
-      metadata
+      tags
     )
   end
 
-  defp send_metric(%LastValue{} = metric, value, metadata) do
+  defp send_metric(%LastValue{} = metric, value, tags) do
     call_appsignal(
       :set_gauge,
       metric.name,
       value,
-      metadata
+      tags
     )
   end
 
-  defp send_metric(%Sum{} = metric, value, metadata) do
+  defp send_metric(%Sum{} = metric, value, tags) do
     call_appsignal(
       :increment_counter,
       metric.name,
       value,
-      metadata
+      tags
     )
   end
 
-  defp send_metric(metric, _measurements, _metadata) do
+  defp send_metric(metric, _measurements, _tags) do
     Logger.warn("Ignoring unsupported metric #{inspect(metric)}")
   end
 

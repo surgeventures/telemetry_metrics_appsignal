@@ -64,12 +64,12 @@ defmodule TelemetryMetricsAppsignalTest do
     ref = make_ref()
 
     expect(AppsignalMock, :increment_counter, fn
-      "web.request.count", 1, %{controller: "HomeController", action: "index"} ->
+      "web.request.count", 1, %{} ->
         send(parent, {ref, :called})
         :ok
     end)
 
-    :telemetry.execute([:web, :request], %{}, %{controller: "HomeController", action: "index"})
+    :telemetry.execute([:web, :request], %{}, %{})
     assert_receive {^ref, :called}
 
     # Measurements should be ignored for counter metric
@@ -86,12 +86,12 @@ defmodule TelemetryMetricsAppsignalTest do
     ref = make_ref()
 
     expect(AppsignalMock, :increment_counter, fn
-      "worker.events.consumed", 11, %{queue: "payments"} ->
+      "worker.events.consumed", 11, %{} ->
         send(parent, {ref, :called})
         :ok
     end)
 
-    :telemetry.execute([:worker, :events], %{consumed: 11}, %{queue: "payments"})
+    :telemetry.execute([:worker, :events], %{consumed: 11}, %{})
     assert_receive {^ref, :called}
 
     TelemetryMetricsAppsignal.detach(metrics)
@@ -106,12 +106,12 @@ defmodule TelemetryMetricsAppsignalTest do
     ref = make_ref()
 
     expect(AppsignalMock, :set_gauge, fn
-      "worker.queue.length", 42, %{queue: "mailing"} ->
+      "worker.queue.length", 42, %{} ->
         send(parent, {ref, :called})
         :ok
     end)
 
-    :telemetry.execute([:worker, :queue], %{length: 42}, %{queue: "mailing"})
+    :telemetry.execute([:worker, :queue], %{length: 42}, %{})
     assert_receive {^ref, :called}
 
     TelemetryMetricsAppsignal.detach([metric])
@@ -126,12 +126,12 @@ defmodule TelemetryMetricsAppsignalTest do
     ref = make_ref()
 
     expect(AppsignalMock, :add_distribution_value, fn
-      "db.query.duration", 99, %{statement: "SELECT"} ->
+      "db.query.duration", 99, %{} ->
         send(parent, {ref, :called})
         :ok
     end)
 
-    :telemetry.execute([:db, :query], %{duration: 99}, %{statement: "SELECT"})
+    :telemetry.execute([:db, :query], %{duration: 99}, %{})
     assert_receive {^ref, :called}
 
     TelemetryMetricsAppsignal.detach([metric])
@@ -152,6 +152,25 @@ defmodule TelemetryMetricsAppsignalTest do
     end)
 
     :telemetry.execute([:db, :query], %{duration: native_time}, %{})
+    assert_receive {^ref, :called}
+
+    TelemetryMetricsAppsignal.detach([metric])
+  end
+
+  test "specifying metric tags" do
+    metric = last_value("worker.queue.length", tags: [:queue])
+    TelemetryMetricsAppsignal.attach([metric])
+
+    parent = self()
+    ref = make_ref()
+
+    expect(AppsignalMock, :set_gauge, fn
+      "worker.queue.length", 42, %{queue: "mailer"} ->
+        send(parent, {ref, :called})
+        :ok
+    end)
+
+    :telemetry.execute([:worker, :queue], %{length: 42}, %{queue: "mailer", host: "localhost"})
     assert_receive {^ref, :called}
 
     TelemetryMetricsAppsignal.detach([metric])
