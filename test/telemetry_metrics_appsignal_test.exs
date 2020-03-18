@@ -137,6 +137,26 @@ defmodule TelemetryMetricsAppsignalTest do
     TelemetryMetricsAppsignal.detach([metric])
   end
 
+  test "converting time units" do
+    metric = summary("db.query.duration", unit: {:native, :millisecond})
+    TelemetryMetricsAppsignal.attach([metric])
+
+    native_time = System.convert_time_unit(123, :millisecond, :native)
+    parent = self()
+    ref = make_ref()
+
+    expect(AppsignalMock, :add_distribution_value, fn
+      "db.query.duration", 123.0, %{} ->
+        send(parent, {ref, :called})
+        :ok
+    end)
+
+    :telemetry.execute([:db, :query], %{duration: native_time}, %{})
+    assert_receive {^ref, :called}
+
+    TelemetryMetricsAppsignal.detach([metric])
+  end
+
   test "handling unsupported metrics" do
     metric = distribution("web.request.duration", buckets: [100, 200, 400])
     TelemetryMetricsAppsignal.attach([metric])

@@ -42,37 +42,51 @@ defmodule TelemetryMetricsAppsignal do
     metrics = Keyword.get(config, :metrics, [])
 
     Enum.each(metrics, fn metric ->
-      send_metric(metric, measurements, metadata)
+      value = prepare_metric_value(metric.measurement, measurements)
+      send_metric(metric, value, metadata)
     end)
   end
 
-  defp send_metric(%Counter{} = metric, _measurements, metadata) do
+  defp prepare_metric_value(measurement, measurements)
+
+  defp prepare_metric_value(convert, measurements) when is_function(convert) do
+    convert.(measurements)
+  end
+
+  defp prepare_metric_value(measurement, measurements)
+       when is_map_key(measurements, measurement) do
+    measurements[measurement]
+  end
+
+  defp prepare_metric_value(_, _), do: nil
+
+  defp send_metric(%Counter{} = metric, _value, metadata) do
     call_appsignal(:increment_counter, metric.name, 1, metadata)
   end
 
-  defp send_metric(%Summary{} = metric, measurements, metadata) do
+  defp send_metric(%Summary{} = metric, value, metadata) do
     call_appsignal(
       :add_distribution_value,
       metric.name,
-      measurements[metric.measurement],
+      value,
       metadata
     )
   end
 
-  defp send_metric(%LastValue{} = metric, measurements, metadata) do
+  defp send_metric(%LastValue{} = metric, value, metadata) do
     call_appsignal(
       :set_gauge,
       metric.name,
-      measurements[metric.measurement],
+      value,
       metadata
     )
   end
 
-  defp send_metric(%Sum{} = metric, measurements, metadata) do
+  defp send_metric(%Sum{} = metric, value, metadata) do
     call_appsignal(
       :increment_counter,
       metric.name,
-      measurements[metric.measurement],
+      value,
       metadata
     )
   end
