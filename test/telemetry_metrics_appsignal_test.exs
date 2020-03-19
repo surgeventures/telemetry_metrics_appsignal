@@ -180,20 +180,31 @@ defmodule TelemetryMetricsAppsignalTest do
   end
 
   test "specifying metric tags" do
-    metric = last_value("worker.queue.length", tags: [:queue])
+    metric = last_value("worker.queue.length", tags: [:queue, :host, :region])
     TelemetryMetricsAppsignal.attach([metric])
 
     parent = self()
     ref = make_ref()
 
-    expect(AppsignalMock, :set_gauge, fn
-      "worker.queue.length", 42, %{queue: "mailer"} ->
-        send(parent, {ref, :called})
+    expect(AppsignalMock, :set_gauge, 4, fn
+      "worker.queue.length", 42, tags ->
+        send(parent, {ref, tags})
         :ok
     end)
 
-    :telemetry.execute([:worker, :queue], %{length: 42}, %{queue: "mailer", host: "localhost"})
-    assert_receive {^ref, :called}
+    :telemetry.execute([:worker, :queue], %{length: 42}, %{
+      queue: "mailer",
+      host: "localhost"
+    })
+
+    tag_permutations = [
+      %{queue: "mailer", host: "localhost"},
+      %{queue: "mailer", host: "any"},
+      %{queue: "any", host: "localhost"},
+      %{queue: "any", host: "any"}
+    ]
+
+    for tags <- tag_permutations, do: assert_receive({^ref, ^tags})
 
     TelemetryMetricsAppsignal.detach([metric])
   end

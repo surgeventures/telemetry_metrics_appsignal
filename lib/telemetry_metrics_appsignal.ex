@@ -118,7 +118,11 @@ defmodule TelemetryMetricsAppsignal do
 
   defp call_appsignal(function_name, key, value, tags)
        when is_binary(key) and is_number(value) and is_map(tags) do
-    apply(@appsignal, function_name, [key, value, tags])
+    tags
+    |> tag_permutations()
+    |> Enum.each(fn tags_permutation ->
+      apply(@appsignal, function_name, [key, value, tags_permutation])
+    end)
   end
 
   defp call_appsignal(function_name, key, value, tags) do
@@ -130,5 +134,16 @@ defmodule TelemetryMetricsAppsignal do
     #{inspect(tags)}\
     )
     """)
+  end
+
+  defp tag_permutations(map) when map == %{}, do: [%{}]
+
+  defp tag_permutations(tags) do
+    for {tag_name, tag_value} <- tags,
+        value_permutation <- [tag_value, "any"],
+        rest <- tag_permutations(Map.drop(tags, [tag_name])) do
+      Map.put(rest, tag_name, value_permutation)
+    end
+    |> Enum.uniq()
   end
 end
