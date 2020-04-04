@@ -1,5 +1,7 @@
 # TelemetryMetricsAppsignal
 
+[![CircleCI](https://circleci.com/gh/surgeventures/telemetry_metrics_appsignal.svg?style=svg)](https://circleci.com/gh/surgeventures/telemetry_metrics_appsignal)
+
 A `Telemetry.Metrics` reporter that pushes metrics to AppSignal.
 
 ## Installation
