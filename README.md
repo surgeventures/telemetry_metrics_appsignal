@@ -1,11 +1,10 @@
 # TelemetryMetricsAppsignal
 
-**TODO: Add description**
+A `Telemetry.Metrics` reporter that pushes metrics to AppSignal.
 
 ## Installation
 
-If [available in Hex](https://hex.pm/docs/publish), the package can be installed
-by adding `telemetry_metrics_appsignal` to your list of dependencies in `mix.exs`:
+Add `telemetry_metrics_appsignal` to your `mix.exs` file:
 
 ```elixir
 def deps do
@@ -15,7 +14,25 @@ def deps do
 end
 ```
 
-Documentation can be generated with [ExDoc](https://github.com/elixir-lang/ex_doc)
-and published on [HexDocs](https://hexdocs.pm). Once published, the docs can
-be found at [https://hexdocs.pm/telemetry_metrics_appsignal](https://hexdocs.pm/telemetry_metrics_appsignal).
+## Usage
 
+Once you've configured [the AppSignal library](https://hexdocs.pm/appsignal), you can define the metrics you want to collect:
+
+```elixir
+defp metrics do
+  [
+    [
+      counter("web.request.count"),
+      last_value("worker.queue.length"),
+      sum("worker.events.consumed"),
+      summary("db.query.duration")
+    ]
+  ]
+end
+```
+
+Then attach them to the AppSignal reporter, probably in your `application.ex` file:
+
+```elixir
+TelemetryMetricsReporter.attach(metrics())
+```

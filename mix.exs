@@ -7,8 +7,11 @@ defmodule TelemetryMetricsAppsignal.MixProject do
       version: "0.1.0",
       elixir: "~> 1.10",
       elixirc_paths: elixirc_paths(Mix.env()),
+      source_url: "https://github.com/surgeventures/telemetry_metrics_appsignal",
       start_permanent: Mix.env() == :prod,
-      deps: deps()
+      deps: deps(),
+      description: description(),
+      package: package()
     ]
   end
 
@@ -28,6 +31,19 @@ defmodule TelemetryMetricsAppsignal.MixProject do
       {:jason, "~> 1.1"},
       {:telemetry, "~> 0.4"},
       {:telemetry_metrics, "~> 0.4"}
+    ]
+  end
+
+  defp description do
+    """
+    `Telemetry.Metrics` reporter for AppSignal.
+    """
+  end
+
+  defp package do
+    [
+      licenses: ["MIT"],
+      links: %{"GitHub" => "https://github.com/surgeventures/telemetry_metrics_appsignal"}
     ]
   end
 end
