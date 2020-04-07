@@ -51,7 +51,7 @@ defmodule TelemetryMetricsAppsignal.MixProject do
 
   defp docs do
     [
-      extras: ["README.md"],
+      extras: ["CHANGELOG.md", "README.md"],
       main: "readme"
     ]
   end
