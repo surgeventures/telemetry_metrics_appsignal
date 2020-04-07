@@ -11,7 +11,8 @@ defmodule TelemetryMetricsAppsignal.MixProject do
       start_permanent: Mix.env() == :prod,
       deps: deps(),
       description: description(),
-      package: package()
+      package: package(),
+      docs: docs()
     ]
   end
 
@@ -27,6 +28,7 @@ defmodule TelemetryMetricsAppsignal.MixProject do
   defp deps do
     [
       {:appsignal, "~> 1.12"},
+      {:ex_doc, "~> 0.21", only: :dev, runtime: false},
       {:hammox, "~> 0.2", only: :test},
       {:jason, "~> 1.1"},
       {:telemetry, "~> 0.4"},
@@ -44,6 +46,13 @@ defmodule TelemetryMetricsAppsignal.MixProject do
     [
       licenses: ["MIT"],
       links: %{"GitHub" => "https://github.com/surgeventures/telemetry_metrics_appsignal"}
+    ]
+  end
+
+  defp docs do
+    [
+      extras: ["README.md"],
+      main: "readme"
     ]
   end
 end
