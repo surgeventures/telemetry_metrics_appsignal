@@ -24,12 +24,10 @@ Once you've configured [the AppSignal library](https://hexdocs.pm/appsignal), yo
 ```elixir
 defp metrics do
   [
-    [
-      counter("web.request.count"),
-      last_value("worker.queue.length"),
-      sum("worker.events.consumed"),
-      summary("db.query.duration")
-    ]
+    counter("web.request.count"),
+    last_value("worker.queue.length"),
+    sum("worker.events.consumed"),
+    summary("db.query.duration")
   ]
 end
 ```
