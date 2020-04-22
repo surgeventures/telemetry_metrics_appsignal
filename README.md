@@ -1,6 +1,7 @@
 # TelemetryMetricsAppsignal
 
 [![CircleCI](https://circleci.com/gh/surgeventures/telemetry_metrics_appsignal.svg?style=svg)](https://circleci.com/gh/surgeventures/telemetry_metrics_appsignal)
+[![Hex pm](http://img.shields.io/hexpm/v/telemetry_metrics_appsignal.svg?style=flat)](https://hex.pm/packages/telemetry_metrics_appsignal)
 
 A `Telemetry.Metrics` reporter that pushes metrics to AppSignal. Requires [the AppSignal library](https://hexdocs.pm/appsignal) to be installed and configured.
 
@@ -36,5 +37,5 @@ end
 Then attach them to the AppSignal reporter, probably in your `application.ex` file:
 
 ```elixir
-TelemetryMetricsReporter.attach(metrics())
+TelemetryMetricsAppsignal.attach(metrics())
 ```
