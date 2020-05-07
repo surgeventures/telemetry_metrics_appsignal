@@ -1,4 +1,60 @@
 defmodule TelemetryMetricsAppsignal do
+  @moduledoc """
+  AppSignal Reporter for [`Telemetry.Metrics`](https://github.com/beam-telemetry/telemetry_metrics) definitions.
+
+  This reporter is useful for getting [custom metrics](https://docs.appsignal.com/metrics/custom.html)
+  into AppSignal from your application. These custom metrics are especially
+  useful for building custom dashboards.
+
+  To use the reporter, first define a list of metrics as show here:
+
+      def metrics, do:
+      [
+        summary("phoenix.endpoint.stop.duration"),
+        last_value("vm.memory.total"),
+        counter("my_app.my_server.call.exception")
+      ]
+
+  It's recommended to start TelemetryMetricsAppsignal under a supervision tree,
+  either in your main application or as recommended [here](https://hexdocs.pm/phoenix/telemetry.html#the-telemetry-supervisor)
+  if using Phoenix:
+
+      {TelemetryMetricsAppsignal, [metrics: metrics()]}
+
+  Putting that altogether, your configuration could look something like this:
+
+      def start_link(_arg) do
+        children = [
+          {TelemetryMetricsAppsignal, [metrics: metrics()]},
+          ...
+        ]
+        Supervisor.init(children, strategy: :one_for_one)
+      end
+
+      defp metrics, do:
+        [
+          summary("phoenix.endpoint.stop.duration"),
+          last_value("vm.memory.total"),
+          counter("my_app.my_server.call.exception")
+        ]
+
+    Optionally you can register a name:
+
+        {TelemetryMetricsAppsignal,
+          [metrics: metrics(), name: MyTelemetryMetricsAppsignal]}
+
+  The following table shows how `Telemetry.Metrics` metrics map to [AppSignal
+  metrics](https://docs.appsignal.com/metrics/custom.html#metric-types):
+
+  | Telemetry.Metrics     | AppSignal |
+  |-----------------------|-----------|
+  | `last_value`          | `guage` |
+  | `counter`             | `counter` |
+  | `sum`                 | `counter`, increased by the provided value |
+  | `summary`             | `measurement` |
+  | `distribution`        | Not supported |
+  """
+  use GenServer
   require Logger
 
   alias Telemetry.Metrics.Counter
@@ -8,7 +64,6 @@ defmodule TelemetryMetricsAppsignal do
   alias Telemetry.Metrics.Summary
 
   @appsignal Application.compile_env(:telemetry_metrics_appsignal, :appsignal, Appsignal)
-  @handler_prefix "telemetry_metrics_appsignal"
 
   @type metric ::
           Counter.t()
@@ -17,33 +72,40 @@ defmodule TelemetryMetricsAppsignal do
           | Sum.t()
           | Summary.t()
 
-  @type option :: {:namespace, String.t()}
+  @type option :: {:metric, [metric]} | {:name, GenServer.name()}
 
-  @spec attach([metric], keyword(option)) :: no_return()
-  def attach(metrics, opts \\ []) do
-    namespace = Keyword.get(opts, :namespace)
-    handler_prefix = prepare_handler_prefix(namespace)
+  @spec start_link([option]) :: :ignore | {:error, any} | {:ok, pid}
+  def start_link(opts) do
+    server_opts = Keyword.take(opts, [:name])
 
-    metrics
-    |> Enum.group_by(& &1.event_name)
-    |> Enum.each(fn {event_name, metrics} ->
-      handler_id = Enum.join(handler_prefix ++ event_name, "_")
+    metrics =
+      opts[:metrics] ||
+        raise ArgumentError, "the :metrics option is required by #{inspect(__MODULE__)}"
 
-      :telemetry.attach(handler_id, event_name, &handle_event/4, metrics: metrics)
-    end)
+    GenServer.start_link(__MODULE__, metrics, server_opts)
   end
 
-  @spec detach([metric], keyword(option)) :: no_return()
-  def detach(metrics, opts \\ []) do
-    namespace = Keyword.get(opts, :namespace)
-    handler_prefix = prepare_handler_prefix(namespace)
+  @impl true
+  @spec init([metric]) :: {:ok, [any]}
+  def init(metrics) do
+    Process.flag(:trap_exit, true)
+    groups = Enum.group_by(metrics, & &1.event_name)
 
-    metrics
-    |> Enum.map(& &1.event_name)
-    |> Enum.each(fn event_name ->
-      handler_id = Enum.join(handler_prefix ++ event_name, "_")
-      :telemetry.detach(handler_id)
-    end)
+    for {event, metrics} <- groups do
+      id = {__MODULE__, event, self()}
+      :telemetry.attach(id, event, &handle_event/4, metrics: metrics)
+    end
+
+    {:ok, Map.keys(groups)}
+  end
+
+  @impl true
+  def terminate(_, events) do
+    for event <- events do
+      :telemetry.detach({__MODULE__, event, self()})
+    end
+
+    :ok
   end
 
   defp handle_event(_event_name, measurements, metadata, config) do
@@ -54,10 +116,6 @@ defmodule TelemetryMetricsAppsignal do
       tags = prepare_metric_tags(metric, metadata)
       send_metric(metric, value, tags)
     end)
-  end
-
-  defp prepare_handler_prefix(namespace) do
-    [@handler_prefix, namespace] |> Enum.reject(&is_nil/1)
   end
 
   defp prepare_metric_value(measurement, measurements)
