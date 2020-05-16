@@ -209,6 +209,26 @@ defmodule TelemetryMetricsAppsignalTest do
     TelemetryMetricsAppsignal.detach([metric])
   end
 
+  test "specifying metric tag values" do
+    metric = last_value("worker.queue.length", tags: [:value], tag_values: &get_and_put_value/1)
+    TelemetryMetricsAppsignal.attach([metric])
+
+    parent = self()
+    ref = make_ref()
+
+    expect(AppsignalMock, :set_gauge, 1, fn
+      "worker.queue.length", 42, tags ->
+        send(parent, {ref, tags})
+        :ok
+    end)
+
+    :telemetry.execute([:worker, :queue], %{length: 42}, %{})
+
+    assert_receive({^ref, %{value: "value"}})
+
+    TelemetryMetricsAppsignal.detach([metric])
+  end
+
   test "handling unsupported metrics" do
     metric = distribution("web.request.duration", buckets: [100, 200, 400])
     TelemetryMetricsAppsignal.attach([metric])
@@ -221,5 +241,9 @@ defmodule TelemetryMetricsAppsignalTest do
     TelemetryMetricsAppsignal.attach([metric])
     :telemetry.execute([:db, :query], %{}, %{})
     TelemetryMetricsAppsignal.detach([metric])
+  end
+
+  defp get_and_put_value(metadata) do
+    Map.put_new(metadata, :value, "value")
   end
 end

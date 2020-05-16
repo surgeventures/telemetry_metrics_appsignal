@@ -51,7 +51,7 @@ defmodule TelemetryMetricsAppsignal do
 
     Enum.each(metrics, fn metric ->
       value = prepare_metric_value(metric.measurement, measurements)
-      tags = prepare_metric_tags(metric.tags, metadata)
+      tags = prepare_metric_tags(metric, metadata)
       send_metric(metric, value, tags)
     end)
   end
@@ -73,8 +73,9 @@ defmodule TelemetryMetricsAppsignal do
 
   defp prepare_metric_value(_, _), do: nil
 
-  defp prepare_metric_tags(tags, metadata) do
-    Map.take(metadata, tags)
+  defp prepare_metric_tags(metric, metadata) do
+    tag_values = metric.tag_values.(metadata)
+    Map.take(tag_values, metric.tags)
   end
 
   defp send_metric(%Counter{} = metric, _value, tags) do
