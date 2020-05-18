@@ -192,7 +192,7 @@ defmodule TelemetryMetricsAppsignalTest do
 
   test "specifying metric tag values" do
     metric = last_value("worker.queue.length", tags: [:value], tag_values: &get_and_put_value/1)
-    TelemetryMetricsAppsignal.attach([metric])
+    start_reporter(metrics: [metric])
 
     parent = self()
     ref = make_ref()
@@ -206,8 +206,6 @@ defmodule TelemetryMetricsAppsignalTest do
     :telemetry.execute([:worker, :queue], %{length: 42}, %{})
 
     assert_receive({^ref, %{value: "value"}})
-
-    TelemetryMetricsAppsignal.detach([metric])
   end
 
   test "handling unsupported metrics" do
