@@ -82,7 +82,7 @@ defmodule TelemetryMetricsAppsignal do
   end
 
   @impl true
-  @spec init([metric]) :: {:ok, [any]}
+  @spec init([metric]) :: {:ok, [[atom]]}
   def init(metrics) do
     Process.flag(:trap_exit, true)
     groups = Enum.group_by(metrics, & &1.event_name)
