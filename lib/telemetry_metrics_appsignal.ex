@@ -74,7 +74,7 @@ defmodule TelemetryMetricsAppsignal do
 
   @type option :: {:metrics, [metric]} | {:name, GenServer.name()}
 
-  @spec start_link([option]) :: :ignore | {:error, any} | {:ok, pid}
+  @spec start_link([option]) :: GenServer.on_start()
   def start_link(opts) do
     server_opts = Keyword.take(opts, [:name])
     metrics = Keyword.get(opts, :metrics, [])
