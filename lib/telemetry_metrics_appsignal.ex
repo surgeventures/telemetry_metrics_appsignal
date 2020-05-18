@@ -6,7 +6,7 @@ defmodule TelemetryMetricsAppsignal do
   into AppSignal from your application. These custom metrics are especially
   useful for building custom dashboards.
 
-  To use the reporter, first define a list of metrics as show here:
+  To use the reporter, first define a list of metrics as shown here:
 
       def metrics, do:
         [
