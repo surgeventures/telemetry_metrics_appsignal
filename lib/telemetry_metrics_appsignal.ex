@@ -72,7 +72,7 @@ defmodule TelemetryMetricsAppsignal do
           | Sum.t()
           | Summary.t()
 
-  @type option :: {:metric, [metric]} | {:name, GenServer.name()}
+  @type option :: {:metrics, [metric]} | {:name, GenServer.name()}
 
   @spec start_link([option]) :: :ignore | {:error, any} | {:ok, pid}
   def start_link(opts) do
