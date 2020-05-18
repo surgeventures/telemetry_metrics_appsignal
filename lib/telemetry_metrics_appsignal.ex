@@ -9,11 +9,11 @@ defmodule TelemetryMetricsAppsignal do
   To use the reporter, first define a list of metrics as show here:
 
       def metrics, do:
-      [
-        summary("phoenix.endpoint.stop.duration"),
-        last_value("vm.memory.total"),
-        counter("my_app.my_server.call.exception")
-      ]
+        [
+          summary("phoenix.endpoint.stop.duration"),
+          last_value("vm.memory.total"),
+          counter("my_app.my_server.call.exception")
+        ]
 
   It's recommended to start TelemetryMetricsAppsignal under a supervision tree,
   either in your main application or as recommended [here](https://hexdocs.pm/phoenix/telemetry.html#the-telemetry-supervisor)
