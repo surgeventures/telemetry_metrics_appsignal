@@ -19,7 +19,7 @@ defmodule TelemetryMetricsAppsignalTest do
     assert Process.whereis(__MODULE__) == pid
   end
 
-  test "not providing metrics in the opts raises" do
+  test "not providing metrics" do
     start_reporter([])
     attached_handlers = :telemetry.list_handlers([])
     actual_event_metrics = fetch_event_metrics(attached_handlers)
