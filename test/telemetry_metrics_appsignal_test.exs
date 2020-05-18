@@ -20,9 +20,17 @@ defmodule TelemetryMetricsAppsignalTest do
   end
 
   test "not providing metrics in the opts raises" do
-    assert_raise RuntimeError, fn ->
-      start_reporter([])
-    end
+    start_reporter([])
+    attached_handlers = :telemetry.list_handlers([])
+    actual_event_metrics = fetch_event_metrics(attached_handlers)
+
+    assert actual_event_metrics == %{}
+
+    stop_supervised!(TelemetryMetricsAppsignal)
+
+    attached_handlers = :telemetry.list_handlers([])
+
+    assert attached_handlers == []
   end
 
   test "attaching and detaching telemetry handlers" do
@@ -34,7 +42,7 @@ defmodule TelemetryMetricsAppsignalTest do
       summary("db.query.duration")
     ]
 
-    reporter = start_reporter(metrics: metrics)
+    start_reporter(metrics: metrics)
 
     attached_handlers = :telemetry.list_handlers([])
 
@@ -45,17 +53,10 @@ defmodule TelemetryMetricsAppsignalTest do
       [:db, :query] => [Summary]
     }
 
-    actual_event_metrics =
-      Enum.reduce(attached_handlers, %{}, fn handler, metrics_acc ->
-        handler_metrics = handler.config[:metrics]
-        event_name = List.first(handler.config[:metrics]).event_name
-        modules = Enum.map(handler_metrics, & &1.__struct__())
-        Map.put(metrics_acc, event_name, modules)
-      end)
+    actual_event_metrics = fetch_event_metrics(attached_handlers)
+    assert actual_event_metrics == event_metrics
 
-    assert Enum.sort(actual_event_metrics) == Enum.sort(event_metrics)
-
-    Agent.stop(reporter)
+    stop_supervised!(TelemetryMetricsAppsignal)
     attached_handlers = :telemetry.list_handlers([])
 
     assert attached_handlers == []
@@ -227,5 +228,14 @@ defmodule TelemetryMetricsAppsignalTest do
 
   defp get_and_put_value(metadata) do
     Map.put_new(metadata, :value, "value")
+  end
+
+  defp fetch_event_metrics(attached_handlers) do
+    Enum.reduce(attached_handlers, %{}, fn handler, metrics_acc ->
+      handler_metrics = handler.config[:metrics]
+      event_name = List.first(handler.config[:metrics]).event_name
+      modules = Enum.map(handler_metrics, & &1.__struct__())
+      Map.put(metrics_acc, event_name, modules)
+    end)
   end
 end

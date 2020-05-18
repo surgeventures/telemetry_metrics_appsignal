@@ -77,11 +77,7 @@ defmodule TelemetryMetricsAppsignal do
   @spec start_link([option]) :: :ignore | {:error, any} | {:ok, pid}
   def start_link(opts) do
     server_opts = Keyword.take(opts, [:name])
-
-    metrics =
-      opts[:metrics] ||
-        raise ArgumentError, "the :metrics option is required by #{inspect(__MODULE__)}"
-
+    metrics = Keyword.get(opts, :metrics, [])
     GenServer.start_link(__MODULE__, metrics, server_opts)
   end
 
