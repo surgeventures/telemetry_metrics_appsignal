@@ -17,23 +17,4 @@ def deps do
 end
 ```
 
-## Usage
-
-Once you've configured [the AppSignal library](https://hexdocs.pm/appsignal), you can define the metrics you want to collect:
-
-```elixir
-defp metrics do
-  [
-    counter("web.request.count"),
-    last_value("worker.queue.length"),
-    sum("worker.events.consumed"),
-    summary("db.query.duration")
-  ]
-end
-```
-
-Then attach them to the AppSignal reporter, probably in your `application.ex` file:
-
-```elixir
-TelemetryMetricsAppsignal.attach(metrics())
-```
+See the documentation on [Hexdocs](https://hexdocs.pm/telemetry_metrics_appsignal/TelemetryMetricsAppsignal.html) for more information.

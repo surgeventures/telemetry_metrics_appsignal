@@ -10,10 +10,28 @@ defmodule TelemetryMetricsAppsignalTest do
   alias Telemetry.Metrics.Sum
   alias Telemetry.Metrics.Summary
 
-  @handler_prefix "telemetry_metrics_appsignal"
   @moduletag capture_log: true
 
   setup :verify_on_exit!
+
+  test "registering a name with the genserver" do
+    pid = start_reporter(metrics: [], name: __MODULE__)
+    assert Process.whereis(__MODULE__) == pid
+  end
+
+  test "not providing metrics" do
+    start_reporter([])
+    attached_handlers = :telemetry.list_handlers([])
+    actual_event_metrics = fetch_event_metrics(attached_handlers)
+
+    assert actual_event_metrics == %{}
+
+    stop_supervised!(TelemetryMetricsAppsignal)
+
+    attached_handlers = :telemetry.list_handlers([])
+
+    assert attached_handlers == []
+  end
 
   test "attaching and detaching telemetry handlers" do
     metrics = [
@@ -24,7 +42,7 @@ defmodule TelemetryMetricsAppsignalTest do
       summary("db.query.duration")
     ]
 
-    TelemetryMetricsAppsignal.attach(metrics)
+    start_reporter(metrics: metrics)
 
     attached_handlers = :telemetry.list_handlers([])
 
@@ -35,39 +53,12 @@ defmodule TelemetryMetricsAppsignalTest do
       [:db, :query] => [Summary]
     }
 
-    Enum.each(event_metrics, fn {event_name, expected_metrics} ->
-      handler_id = [@handler_prefix | event_name] |> Enum.join("_")
-      handler = Enum.find(attached_handlers, &(&1.id == handler_id))
-      handler_metrics = handler.config[:metrics]
+    actual_event_metrics = fetch_event_metrics(attached_handlers)
+    assert actual_event_metrics == event_metrics
 
-      assert handler.event_name == event_name
-      assert Enum.map(handler_metrics, & &1.__struct__()) == expected_metrics
-    end)
-
-    TelemetryMetricsAppsignal.detach(metrics)
-    attached_handlers = :telemetry.list_handlers([])
-    assert attached_handlers == []
-  end
-
-  test "allwing to configure handler namespace" do
-    metric = counter("web.request.count")
-    TelemetryMetricsAppsignal.attach([metric], namespace: "api")
-    TelemetryMetricsAppsignal.attach([metric], namespace: "rpc")
+    stop_supervised!(TelemetryMetricsAppsignal)
     attached_handlers = :telemetry.list_handlers([])
 
-    handler_ids =
-      attached_handlers
-      |> Enum.map(& &1.id)
-      |> Enum.sort()
-
-    assert handler_ids == [
-             "telemetry_metrics_appsignal_api_web_request",
-             "telemetry_metrics_appsignal_rpc_web_request"
-           ]
-
-    TelemetryMetricsAppsignal.detach([metric], namespace: "api")
-    TelemetryMetricsAppsignal.detach([metric], namespace: "rpc")
-    attached_handlers = :telemetry.list_handlers([])
     assert attached_handlers == []
   end
 
@@ -81,7 +72,7 @@ defmodule TelemetryMetricsAppsignalTest do
       sum("worker.events.consumed")
     ]
 
-    TelemetryMetricsAppsignal.attach(metrics)
+    start_reporter(metrics: metrics)
 
     ref = make_ref()
 
@@ -115,14 +106,12 @@ defmodule TelemetryMetricsAppsignalTest do
 
     :telemetry.execute([:worker, :events], %{consumed: 11}, %{})
     assert_receive {^ref, :called}
-
-    TelemetryMetricsAppsignal.detach(metrics)
   end
 
   test "reporting gauge metrics" do
     # `Telemetry.Metrics.LastValue` maps to AppSignal's gauge metric
     metric = last_value("worker.queue.length")
-    TelemetryMetricsAppsignal.attach([metric])
+    start_reporter(metrics: [metric])
 
     parent = self()
     ref = make_ref()
@@ -135,14 +124,12 @@ defmodule TelemetryMetricsAppsignalTest do
 
     :telemetry.execute([:worker, :queue], %{length: 42}, %{})
     assert_receive {^ref, :called}
-
-    TelemetryMetricsAppsignal.detach([metric])
   end
 
   test "reporting measurement metrics" do
     # `Telemetry.Metrics.Summary` maps to AppSignal's measurement metric
     metric = summary("db.query.duration")
-    TelemetryMetricsAppsignal.attach([metric])
+    start_reporter(metrics: [metric])
 
     parent = self()
     ref = make_ref()
@@ -155,13 +142,11 @@ defmodule TelemetryMetricsAppsignalTest do
 
     :telemetry.execute([:db, :query], %{duration: 99}, %{})
     assert_receive {^ref, :called}
-
-    TelemetryMetricsAppsignal.detach([metric])
   end
 
   test "converting time units" do
     metric = summary("db.query.duration", unit: {:native, :millisecond})
-    TelemetryMetricsAppsignal.attach([metric])
+    start_reporter(metrics: [metric])
 
     native_time = System.convert_time_unit(123, :millisecond, :native)
     parent = self()
@@ -175,13 +160,11 @@ defmodule TelemetryMetricsAppsignalTest do
 
     :telemetry.execute([:db, :query], %{duration: native_time}, %{})
     assert_receive {^ref, :called}
-
-    TelemetryMetricsAppsignal.detach([metric])
   end
 
   test "specifying metric tags" do
     metric = last_value("worker.queue.length", tags: [:queue, :host, :region])
-    TelemetryMetricsAppsignal.attach([metric])
+    start_reporter(metrics: [metric])
 
     parent = self()
     ref = make_ref()
@@ -205,13 +188,11 @@ defmodule TelemetryMetricsAppsignalTest do
     ]
 
     for tags <- tag_permutations, do: assert_receive({^ref, ^tags})
-
-    TelemetryMetricsAppsignal.detach([metric])
   end
 
   test "specifying metric tag values" do
     metric = last_value("worker.queue.length", tags: [:value], tag_values: &get_and_put_value/1)
-    TelemetryMetricsAppsignal.attach([metric])
+    start_reporter(metrics: [metric])
 
     parent = self()
     ref = make_ref()
@@ -225,25 +206,34 @@ defmodule TelemetryMetricsAppsignalTest do
     :telemetry.execute([:worker, :queue], %{length: 42}, %{})
 
     assert_receive({^ref, %{value: "value"}})
-
-    TelemetryMetricsAppsignal.detach([metric])
   end
 
   test "handling unsupported metrics" do
     metric = distribution("web.request.duration", buckets: [100, 200, 400])
-    TelemetryMetricsAppsignal.attach([metric])
+    start_reporter(metrics: [metric])
     :telemetry.execute([:web, :request], %{duration: 99}, %{})
-    TelemetryMetricsAppsignal.detach([metric])
   end
 
   test "handling missing measurement" do
     metric = summary("db.query.duration")
-    TelemetryMetricsAppsignal.attach([metric])
+    start_reporter(metrics: [metric])
     :telemetry.execute([:db, :query], %{}, %{})
-    TelemetryMetricsAppsignal.detach([metric])
+  end
+
+  defp start_reporter(opts) do
+    start_supervised!({TelemetryMetricsAppsignal, opts})
   end
 
   defp get_and_put_value(metadata) do
     Map.put_new(metadata, :value, "value")
+  end
+
+  defp fetch_event_metrics(attached_handlers) do
+    Enum.reduce(attached_handlers, %{}, fn handler, metrics_acc ->
+      handler_metrics = handler.config[:metrics]
+      event_name = List.first(handler.config[:metrics]).event_name
+      modules = Enum.map(handler_metrics, & &1.__struct__())
+      Map.put(metrics_acc, event_name, modules)
+    end)
   end
 end
