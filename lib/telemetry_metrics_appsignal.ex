@@ -48,7 +48,7 @@ defmodule TelemetryMetricsAppsignal do
 
   | Telemetry.Metrics     | AppSignal |
   |-----------------------|-----------|
-  | `last_value`          | `guage` |
+  | `last_value`          | `gauge` |
   | `counter`             | `counter` |
   | `sum`                 | `counter`, increased by the provided value |
   | `summary`             | `measurement` |
