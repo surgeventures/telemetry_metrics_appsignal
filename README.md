@@ -12,7 +12,7 @@ Add `telemetry_metrics_appsignal` to your `mix.exs` file:
 ```elixir
 def deps do
   [
-    {:telemetry_metrics_appsignal, "~> 0.1.1"}
+    {:telemetry_metrics_appsignal, "~> 1.0"}
   ]
 end
 ```
