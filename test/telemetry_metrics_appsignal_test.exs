@@ -1,6 +1,7 @@
 defmodule TelemetryMetricsAppsignalTest do
   use ExUnit.Case
 
+  import ExUnit.CaptureLog
   import Telemetry.Metrics
   import Hammox
 
@@ -217,7 +218,10 @@ defmodule TelemetryMetricsAppsignalTest do
   test "handling missing measurement" do
     metric = summary("db.query.duration")
     start_reporter(metrics: [metric])
-    :telemetry.execute([:db, :query], %{}, %{})
+
+    assert capture_log(fn ->
+             :telemetry.execute([:db, :query], %{}, %{})
+           end) == ""
   end
 
   defp start_reporter(opts) do
