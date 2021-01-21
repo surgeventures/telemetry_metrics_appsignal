@@ -27,7 +27,7 @@ defmodule TelemetryMetricsAppsignal.MixProject do
 
   defp deps do
     [
-      {:appsignal, "~> 1.12"},
+      {:appsignal, "~> 1.12 or ~> 2.0"},
       {:ex_doc, "~> 0.21", only: :dev, runtime: false},
       {:hammox, "~> 0.2", only: :test},
       {:jason, "~> 1.1", optional: true},
