@@ -31,7 +31,7 @@ defmodule TelemetryMetricsAppsignal.MixProject do
       {:ex_doc, "~> 0.21", only: :dev, runtime: false},
       {:hammox, "~> 0.2", only: :test},
       {:jason, "~> 1.1", optional: true},
-      {:telemetry, "~> 0.4"},
+      {:telemetry, "~> 0.4 or ~> 1.0"},
       {:telemetry_metrics, "~> 0.4"}
     ]
   end
