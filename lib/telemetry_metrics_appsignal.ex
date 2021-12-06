@@ -89,7 +89,7 @@ defmodule TelemetryMetricsAppsignal do
 
     for {event, metrics} <- groups do
       id = {__MODULE__, event, self()}
-      :telemetry.attach(id, event, &handle_event/4, metrics: metrics)
+      :telemetry.attach(id, event, &__MODULE__.handle_event/4, metrics: metrics)
     end
 
     {:ok, Map.keys(groups)}
@@ -104,7 +104,7 @@ defmodule TelemetryMetricsAppsignal do
     :ok
   end
 
-  defp handle_event(_event_name, measurements, metadata, config) do
+  def handle_event(_event_name, measurements, metadata, config) do
     metrics = Keyword.get(config, :metrics, [])
 
     Enum.each(metrics, fn metric ->
