@@ -149,8 +149,8 @@ defmodule TelemetryMetricsAppsignalTest do
     # `Telemetry.Metrics.Summary` maps to AppSignal's measurement metric
     metric =
       summary("db.query.foo",
-        measurement: fn measurement ->
-          measurement.duration * 10
+        measurement: fn measurements ->
+          measurements.duration * 10
         end
       )
 
