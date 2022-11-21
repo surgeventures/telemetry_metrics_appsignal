@@ -172,9 +172,9 @@ defmodule TelemetryMetricsAppsignalTest do
   test "reporting calculated metrics with binary functions" do
     # `Telemetry.Metrics.Summary` maps to AppSignal's measurement metric
     metric =
-      summary("db.query.foo",
-        measurement: fn _measurement, metadata ->
-          metadata.some_metadata_value + 1
+      summary("db.query.duration_multiplied",
+        measurement: fn measurements, metadata ->
+          measurements.duration * metadata.multiplier
         end
       )
 
@@ -184,12 +184,12 @@ defmodule TelemetryMetricsAppsignalTest do
     ref = make_ref()
 
     expect(AppsignalMock, :add_distribution_value, fn
-      "db.query.foo", 2, %{} ->
+      "db.query.duration_multiplied", 198, %{} ->
         send(parent, {ref, :called})
         :ok
     end)
 
-    :telemetry.execute([:db, :query], %{duration: 99}, %{some_metadata_value: 1})
+    :telemetry.execute([:db, :query], %{duration: 99}, %{multiplier: 2})
     assert_receive {^ref, :called}
   end
 
