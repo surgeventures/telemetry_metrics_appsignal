@@ -148,7 +148,7 @@ defmodule TelemetryMetricsAppsignalTest do
   test "reporting calculated metrics with unary functions" do
     # `Telemetry.Metrics.Summary` maps to AppSignal's measurement metric
     metric =
-      summary("db.query.foo",
+      summary("db.query.duration_multiplied",
         measurement: fn measurements ->
           measurements.duration * 10
         end
