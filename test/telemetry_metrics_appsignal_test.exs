@@ -160,7 +160,7 @@ defmodule TelemetryMetricsAppsignalTest do
     ref = make_ref()
 
     expect(AppsignalMock, :add_distribution_value, fn
-      "db.query.foo", 990, %{} ->
+      "db.query.duration_multiplied", 990, %{} ->
         send(parent, {ref, :called})
         :ok
     end)
