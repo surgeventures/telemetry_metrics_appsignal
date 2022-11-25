@@ -145,6 +145,54 @@ defmodule TelemetryMetricsAppsignalTest do
     assert_receive {^ref, :called}
   end
 
+  test "reporting calculated metrics with unary functions" do
+    # `Telemetry.Metrics.Summary` maps to AppSignal's measurement metric
+    metric =
+      summary("db.query.duration_multiplied",
+        measurement: fn measurements ->
+          measurements.duration * 10
+        end
+      )
+
+    start_reporter(metrics: [metric])
+
+    parent = self()
+    ref = make_ref()
+
+    expect(AppsignalMock, :add_distribution_value, fn
+      "db.query.duration_multiplied", 990, %{} ->
+        send(parent, {ref, :called})
+        :ok
+    end)
+
+    :telemetry.execute([:db, :query], %{duration: 99}, %{})
+    assert_receive {^ref, :called}
+  end
+
+  test "reporting calculated metrics with binary functions" do
+    # `Telemetry.Metrics.Summary` maps to AppSignal's measurement metric
+    metric =
+      summary("db.query.duration_multiplied",
+        measurement: fn measurements, metadata ->
+          measurements.duration * metadata.multiplier
+        end
+      )
+
+    start_reporter(metrics: [metric])
+
+    parent = self()
+    ref = make_ref()
+
+    expect(AppsignalMock, :add_distribution_value, fn
+      "db.query.duration_multiplied", 198, %{} ->
+        send(parent, {ref, :called})
+        :ok
+    end)
+
+    :telemetry.execute([:db, :query], %{duration: 99}, %{multiplier: 2})
+    assert_receive {^ref, :called}
+  end
+
   test "converting time units" do
     metric = summary("db.query.duration", unit: {:native, :millisecond})
     start_reporter(metrics: [metric])

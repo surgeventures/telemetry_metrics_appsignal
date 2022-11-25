@@ -108,27 +108,33 @@ defmodule TelemetryMetricsAppsignal do
     metrics = Keyword.get(config, :metrics, [])
 
     Enum.each(metrics, fn metric ->
-      if value = prepare_metric_value(metric, measurements) do
+      if value = prepare_metric_value(metric, measurements, metadata) do
         tags = prepare_metric_tags(metric, metadata)
         send_metric(metric, value, tags)
       end
     end)
   end
 
-  defp prepare_metric_value(metric, measurements)
+  defp prepare_metric_value(metric, measurements, metadata)
 
-  defp prepare_metric_value(%Counter{}, _measurements), do: 1
+  defp prepare_metric_value(%Counter{}, _measurements, _metadata), do: 1
 
-  defp prepare_metric_value(%{measurement: convert}, measurements) when is_function(convert) do
+  defp prepare_metric_value(%{measurement: convert}, measurements, metadata)
+       when is_function(convert, 2) do
+    convert.(measurements, metadata)
+  end
+
+  defp prepare_metric_value(%{measurement: convert}, measurements, _metadata)
+       when is_function(convert) do
     convert.(measurements)
   end
 
-  defp prepare_metric_value(%{measurement: measurement}, measurements)
+  defp prepare_metric_value(%{measurement: measurement}, measurements, _metadata)
        when is_map_key(measurements, measurement) do
     measurements[measurement]
   end
 
-  defp prepare_metric_value(_, _), do: nil
+  defp prepare_metric_value(_, _, _), do: nil
 
   defp prepare_metric_tags(metric, metadata) do
     tag_values = metric.tag_values.(metadata)
