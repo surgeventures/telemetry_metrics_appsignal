@@ -1,7 +1,7 @@
 # TelemetryMetricsAppsignal
 
-[![CircleCI](https://circleci.com/gh/surgeventures/telemetry_metrics_appsignal.svg?style=svg)](https://circleci.com/gh/surgeventures/telemetry_metrics_appsignal)
-[![Hex pm](http://img.shields.io/hexpm/v/telemetry_metrics_appsignal.svg?style=flat)](https://hex.pm/packages/telemetry_metrics_appsignal)
+[![GitHub Workflow Status (branch)](https://img.shields.io/github/workflow/status/surgeventures/telemetry_metrics_appsignal/Test/main)](https://github.com/surgeventures/telemetry_metrics_appsignal/actions/workflows/test.yml?query=branch%3Amain)
+[![Hex pm](http://img.shields.io/hexpm/v/telemetry_metrics_appsignal)](https://hex.pm/packages/telemetry_metrics_appsignal)
 
 A `Telemetry.Metrics` reporter that pushes metrics to AppSignal. Requires [the AppSignal library](https://hexdocs.pm/appsignal) to be installed and configured.
 
