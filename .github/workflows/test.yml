@@ -18,16 +18,6 @@ jobs:
         with:
           otp-version: "25.1.2"
           elixir-version: "1.14.2"
-      # - uses: actions/cache@v3
-      #   name: Cache dependencies
-      #   with:
-      #     path: |
-      #       deps
-      #     key: deps-${{ hashFiles('mix.lock') }}
-      #     restore-keys: |
-      #       deps-${{ hashFiles('mix.lock') }}
-      #       deps-
-      # - run: mix deps.get
       - run: mix format --check-formatted
   test:
     name: Test on Elixir ${{ matrix.elixir }} (OTP ${{ matrix.otp }})
