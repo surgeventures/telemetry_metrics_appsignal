@@ -18,6 +18,16 @@ jobs:
         with:
           otp-version: "25.1.2"
           elixir-version: "1.14.2"
+      # - uses: actions/cache@v3
+      #   name: Cache dependencies
+      #   with:
+      #     path: |
+      #       deps
+      #     key: deps-${{ hashFiles('mix.lock') }}
+      #     restore-keys: |
+      #       deps-${{ hashFiles('mix.lock') }}
+      #       deps-
+      # - run: mix deps.get
       - run: mix format --check-formatted
   test:
     name: Test on Elixir ${{ matrix.elixir }} (OTP ${{ matrix.otp }})
@@ -25,7 +35,7 @@ jobs:
     strategy:
       matrix:
         otp: ["23.3.4.18", "24.3.4.6", "25.1.2"]
-        elixir: ["1.12.3", "1.13.4" "1.14.2"]
+        elixir: ["1.12.3", "1.13.4", "1.14.2"]
     steps:
       - uses: actions/checkout@v3
       - uses: erlef/setup-beam@v1
