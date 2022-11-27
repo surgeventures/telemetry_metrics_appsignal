@@ -12,7 +12,10 @@ defmodule TelemetryMetricsAppsignal.MixProject do
       deps: deps(),
       description: description(),
       package: package(),
-      docs: docs()
+      docs: docs(),
+      dialyzer: [
+        plt_file: {:no_warn, "priv/plts/dialyzer.plt"}
+      ]
     ]
   end
 
@@ -28,6 +31,7 @@ defmodule TelemetryMetricsAppsignal.MixProject do
   defp deps do
     [
       {:appsignal, "~> 1.12 or ~> 2.0"},
+      {:dialyxir, "~> 1.0", only: :dev, runtime: false},
       {:ex_doc, "~> 0.21", only: :dev, runtime: false},
       {:hammox, "~> 0.2", only: :test},
       {:jason, "~> 1.1", optional: true},
