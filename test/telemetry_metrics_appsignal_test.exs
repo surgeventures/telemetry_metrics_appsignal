@@ -22,14 +22,14 @@ defmodule TelemetryMetricsAppsignalTest do
 
   test "not providing metrics" do
     start_reporter([])
-    attached_handlers = :telemetry.list_handlers([])
+    attached_handlers = fetch_attached_handlers()
     actual_event_metrics = fetch_event_metrics(attached_handlers)
 
     assert actual_event_metrics == %{}
 
     stop_supervised!(TelemetryMetricsAppsignal)
 
-    attached_handlers = :telemetry.list_handlers([])
+    attached_handlers = fetch_attached_handlers()
 
     assert attached_handlers == []
   end
@@ -45,7 +45,7 @@ defmodule TelemetryMetricsAppsignalTest do
 
     start_reporter(metrics: metrics)
 
-    attached_handlers = :telemetry.list_handlers([])
+    attached_handlers = fetch_attached_handlers()
 
     event_metrics = %{
       [:web, :request] => [Counter, Distribution],
@@ -58,7 +58,7 @@ defmodule TelemetryMetricsAppsignalTest do
     assert actual_event_metrics == event_metrics
 
     stop_supervised!(TelemetryMetricsAppsignal)
-    attached_handlers = :telemetry.list_handlers([])
+    attached_handlers = fetch_attached_handlers()
 
     assert attached_handlers == []
   end
@@ -278,6 +278,15 @@ defmodule TelemetryMetricsAppsignalTest do
 
   defp get_and_put_value(metadata) do
     Map.put_new(metadata, :value, "value")
+  end
+
+  defp fetch_attached_handlers do
+    []
+    |> :telemetry.list_handlers()
+    |> Enum.filter(fn
+      %{id: {TelemetryMetricsAppsignal, _, _}} -> true
+      _ -> false
+    end)
   end
 
   defp fetch_event_metrics(attached_handlers) do
