@@ -211,6 +211,56 @@ defmodule TelemetryMetricsAppsignalTest do
     assert_receive {^ref, :called}
   end
 
+  test "filtering with keep" do
+    metric =
+      last_value("worker.queue.length",
+        keep: fn metadata ->
+          assert %{number: number} = metadata
+          number > 3
+        end
+      )
+
+    start_reporter(metrics: [metric])
+
+    parent = self()
+    ref = make_ref()
+
+    expect(AppsignalMock, :set_gauge, fn
+      "worker.queue.length", 60, %{} ->
+        send(parent, {ref, :called})
+        :ok
+    end)
+
+    :telemetry.execute([:worker, :queue], %{length: 42}, %{number: 2})
+    :telemetry.execute([:worker, :queue], %{length: 60}, %{number: 5})
+    assert_receive {^ref, :called}
+  end
+
+  test "filtering with drop" do
+    metric =
+      last_value("worker.queue.length",
+        drop: fn metadata ->
+          assert %{number: number} = metadata
+          number > 3
+        end
+      )
+
+    start_reporter(metrics: [metric])
+
+    parent = self()
+    ref = make_ref()
+
+    expect(AppsignalMock, :set_gauge, fn
+      "worker.queue.length", 42, %{} ->
+        send(parent, {ref, :called})
+        :ok
+    end)
+
+    :telemetry.execute([:worker, :queue], %{length: 42}, %{number: 2})
+    :telemetry.execute([:worker, :queue], %{length: 60}, %{number: 5})
+    assert_receive {^ref, :called}
+  end
+
   test "specifying metric tags" do
     metric = last_value("worker.queue.length", tags: [:queue, :host, :region])
     start_reporter(metrics: [metric])
