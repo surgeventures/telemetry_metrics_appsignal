@@ -108,12 +108,24 @@ defmodule TelemetryMetricsAppsignal do
     metrics = Keyword.get(config, :metrics, [])
 
     Enum.each(metrics, fn metric ->
-      if value = prepare_metric_value(metric, measurements, metadata) do
-        tags = prepare_metric_tags(metric, metadata)
-        send_metric(metric, value, tags)
+      if keep?(metric, metadata) do
+        if value = prepare_metric_value(metric, measurements, metadata) do
+          tags = prepare_metric_tags(metric, metadata)
+          send_metric(metric, value, tags)
+        end
       end
     end)
   end
+
+  defp keep?(%{keep: keep}, metadata) when is_function(keep, 1) do
+    keep.(metadata)
+  end
+
+  defp keep?(%{drop: drop}, metadata) when is_function(drop, 1) do
+    not drop.(metadata)
+  end
+
+  defp keep?(_, _), do: true
 
   defp prepare_metric_value(metric, measurements, metadata)
 
