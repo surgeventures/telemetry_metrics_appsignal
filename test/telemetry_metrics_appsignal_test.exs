@@ -11,8 +11,6 @@ defmodule TelemetryMetricsAppsignalTest do
   alias Telemetry.Metrics.Sum
   alias Telemetry.Metrics.Summary
 
-  @moduletag capture_log: true
-
   setup :verify_on_exit!
 
   test "registering a name with the genserver" do
@@ -83,7 +81,10 @@ defmodule TelemetryMetricsAppsignalTest do
         :ok
     end)
 
-    :telemetry.execute([:web, :request], %{}, %{})
+    assert capture_log(fn ->
+             :telemetry.execute([:web, :request], %{}, %{})
+           end) == ""
+
     assert_receive {^ref, :called}
 
     # Measurements should be ignored for counter metric
@@ -94,7 +95,10 @@ defmodule TelemetryMetricsAppsignalTest do
       :ok
     end)
 
-    :telemetry.execute([:web, :request], %{count: 5}, %{})
+    assert capture_log(fn ->
+             :telemetry.execute([:web, :request], %{count: 5}, %{})
+           end) == ""
+
     assert_receive {^ref, :called}
 
     ref = make_ref()
@@ -105,7 +109,10 @@ defmodule TelemetryMetricsAppsignalTest do
         :ok
     end)
 
-    :telemetry.execute([:worker, :events], %{consumed: 11}, %{})
+    assert capture_log(fn ->
+             :telemetry.execute([:worker, :events], %{consumed: 11}, %{})
+           end) == ""
+
     assert_receive {^ref, :called}
   end
 
@@ -123,7 +130,10 @@ defmodule TelemetryMetricsAppsignalTest do
         :ok
     end)
 
-    :telemetry.execute([:worker, :queue], %{length: 42}, %{})
+    assert capture_log(fn ->
+             :telemetry.execute([:worker, :queue], %{length: 42}, %{})
+           end) == ""
+
     assert_receive {^ref, :called}
   end
 
@@ -141,7 +151,10 @@ defmodule TelemetryMetricsAppsignalTest do
         :ok
     end)
 
-    :telemetry.execute([:db, :query], %{duration: 99}, %{})
+    assert capture_log(fn ->
+             :telemetry.execute([:db, :query], %{duration: 99}, %{})
+           end) == ""
+
     assert_receive {^ref, :called}
   end
 
@@ -165,7 +178,10 @@ defmodule TelemetryMetricsAppsignalTest do
         :ok
     end)
 
-    :telemetry.execute([:db, :query], %{duration: 99}, %{})
+    assert capture_log(fn ->
+             :telemetry.execute([:db, :query], %{duration: 99}, %{})
+           end) == ""
+
     assert_receive {^ref, :called}
   end
 
@@ -189,7 +205,10 @@ defmodule TelemetryMetricsAppsignalTest do
         :ok
     end)
 
-    :telemetry.execute([:db, :query], %{duration: 99}, %{multiplier: 2})
+    assert capture_log(fn ->
+             :telemetry.execute([:db, :query], %{duration: 99}, %{multiplier: 2})
+           end) == ""
+
     assert_receive {^ref, :called}
   end
 
@@ -207,7 +226,10 @@ defmodule TelemetryMetricsAppsignalTest do
         :ok
     end)
 
-    :telemetry.execute([:db, :query], %{duration: native_time}, %{})
+    assert capture_log(fn ->
+             :telemetry.execute([:db, :query], %{duration: native_time}, %{})
+           end) == ""
+
     assert_receive {^ref, :called}
   end
 
@@ -231,8 +253,11 @@ defmodule TelemetryMetricsAppsignalTest do
         :ok
     end)
 
-    :telemetry.execute([:worker, :queue], %{length: 42}, %{number: 2})
-    :telemetry.execute([:worker, :queue], %{length: 60}, %{number: 5})
+    assert capture_log(fn ->
+             :telemetry.execute([:worker, :queue], %{length: 42}, %{number: 2})
+             :telemetry.execute([:worker, :queue], %{length: 60}, %{number: 5})
+           end) == ""
+
     assert_receive {^ref, :called}
   end
 
@@ -256,8 +281,11 @@ defmodule TelemetryMetricsAppsignalTest do
         :ok
     end)
 
-    :telemetry.execute([:worker, :queue], %{length: 42}, %{number: 2})
-    :telemetry.execute([:worker, :queue], %{length: 60}, %{number: 5})
+    assert capture_log(fn ->
+             :telemetry.execute([:worker, :queue], %{length: 42}, %{number: 2})
+             :telemetry.execute([:worker, :queue], %{length: 60}, %{number: 5})
+           end) == ""
+
     assert_receive {^ref, :called}
   end
 
@@ -274,10 +302,12 @@ defmodule TelemetryMetricsAppsignalTest do
         :ok
     end)
 
-    :telemetry.execute([:worker, :queue], %{length: 42}, %{
-      queue: "mailer",
-      host: "localhost"
-    })
+    assert capture_log(fn ->
+             :telemetry.execute([:worker, :queue], %{length: 42}, %{
+               queue: "mailer",
+               host: "localhost"
+             })
+           end) == ""
 
     tag_permutations = [
       %{queue: "mailer", host: "localhost"},
@@ -296,21 +326,27 @@ defmodule TelemetryMetricsAppsignalTest do
     parent = self()
     ref = make_ref()
 
-    expect(AppsignalMock, :set_gauge, 1, fn
+    expect(AppsignalMock, :set_gauge, 2, fn
       "worker.queue.length", 42, tags ->
         send(parent, {ref, tags})
         :ok
     end)
 
-    :telemetry.execute([:worker, :queue], %{length: 42}, %{})
+    assert capture_log(fn ->
+             :telemetry.execute([:worker, :queue], %{length: 42}, %{})
+           end) == ""
 
     assert_receive({^ref, %{value: "value"}})
+    assert_receive({^ref, %{value: "any"}})
   end
 
   test "handling unsupported metrics" do
     metric = distribution("web.request.duration", buckets: [100, 200, 400])
     start_reporter(metrics: [metric])
-    :telemetry.execute([:web, :request], %{duration: 99}, %{})
+
+    assert capture_log(fn ->
+             :telemetry.execute([:web, :request], %{duration: 99}, %{})
+           end) =~ "Ignoring unsupported metric"
   end
 
   test "handling missing measurement" do
