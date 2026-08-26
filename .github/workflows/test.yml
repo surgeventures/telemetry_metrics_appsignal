@@ -24,7 +24,9 @@ jobs:
           api-key: ${{ secrets.GH_FRESHAENGINEERING_STEP_SECURITY_API_KEY }}
 
       - uses: actions/checkout@f43a0e5ff2bd294095638e18286ca9a3d1956744 # v3
-      - uses: step-security/mise-action@2796166110dee826668caddd4bffedae5116e7cd # v4.2.0
+      - uses: step-security/mise-action@6e96d2ffbc65c037f23c78818f2a339d6cf830f7 # v4.2.4
+        with:
+          version: '2026.8.12'
       - run: mix format --check-formatted
   test:
     name: Test
@@ -37,7 +39,9 @@ jobs:
           api-key: ${{ secrets.GH_FRESHAENGINEERING_STEP_SECURITY_API_KEY }}
 
       - uses: actions/checkout@f43a0e5ff2bd294095638e18286ca9a3d1956744 # v3
-      - uses: step-security/mise-action@2796166110dee826668caddd4bffedae5116e7cd # v4.2.0
+      - uses: step-security/mise-action@6e96d2ffbc65c037f23c78818f2a339d6cf830f7 # v4.2.4
+        with:
+          version: '2026.8.12'
       - uses: step-security/runs-on-cache@c5b0cba15d05488ebc630ad8d1e95b3d9b35ac73 # v5.0.7
         name: Cache dependencies
         with:
@@ -70,7 +74,9 @@ jobs:
           api-key: ${{ secrets.GH_FRESHAENGINEERING_STEP_SECURITY_API_KEY }}
 
       - uses: actions/checkout@f43a0e5ff2bd294095638e18286ca9a3d1956744 # v3
-      - uses: step-security/mise-action@2796166110dee826668caddd4bffedae5116e7cd # v4.2.0
+      - uses: step-security/mise-action@6e96d2ffbc65c037f23c78818f2a339d6cf830f7 # v4.2.4
+        with:
+          version: '2026.8.12'
       - uses: step-security/runs-on-cache@c5b0cba15d05488ebc630ad8d1e95b3d9b35ac73 # v5.0.7
         name: Cache dependencies
         with:
