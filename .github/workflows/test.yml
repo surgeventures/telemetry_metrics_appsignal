@@ -96,9 +96,9 @@ jobs:
         with:
           path: |
             priv/plts
-          key: plt-${{ runner.os }}
+          key: plt-${{ runner.os }}-${{ hashFiles('mise.toml') }}
           restore-keys: |
-            plt-${{ runner.os }}
+            plt-${{ runner.os }}-${{ hashFiles('mise.toml') }}
       - name: Create PLTs
         if: steps.plt_cache.outputs.cache-hit != 'true'
         run: mix dialyzer --plt
