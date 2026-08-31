@@ -379,7 +379,7 @@ defmodule TelemetryMetricsAppsignalTest do
     Enum.reduce(attached_handlers, %{}, fn handler, metrics_acc ->
       handler_metrics = handler.config[:metrics]
       event_name = List.first(handler.config[:metrics]).event_name
-      modules = Enum.map(handler_metrics, & &1.__struct__())
+      modules = Enum.map(handler_metrics, & &1.__struct__)
       Map.put(metrics_acc, event_name, modules)
     end)
   end

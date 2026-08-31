@@ -185,7 +185,7 @@ defmodule TelemetryMetricsAppsignal do
   end
 
   defp send_metric(metric, _measurements, _tags) do
-    Logger.warn("Ignoring unsupported metric #{inspect(metric)}")
+    Logger.warning("Ignoring unsupported metric #{inspect(metric)}")
   end
 
   defp call_appsignal(function_name, key, value, tags) when is_list(key) do
@@ -202,7 +202,7 @@ defmodule TelemetryMetricsAppsignal do
   end
 
   defp call_appsignal(function_name, key, value, tags) do
-    Logger.warn("""
+    Logger.warning("""
     Attempted to send metrics invalid with AppSignal library: \
     #{inspect(function_name)}(\
     #{inspect(key)}, \
