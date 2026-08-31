@@ -148,6 +148,10 @@ defmodule TelemetryMetricsAppsignal do
 
   defp prepare_metric_value(_, _, _), do: nil
 
+  defp prepare_metric_tags(%{tags: tags}, metadata) when is_function(tags, 1) do
+    tags.(metadata)
+  end
+
   defp prepare_metric_tags(metric, metadata) do
     tag_values = metric.tag_values.(metadata)
     Map.take(tag_values, metric.tags)

@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Support functions in the `Telemetry.Metrics` `:tags` option.
+
 ### Changed
 
 - CI now tests Elixir 1.17.3/1.18.4/1.19.5/1.20.3 on OTP 26/27/28 instead of

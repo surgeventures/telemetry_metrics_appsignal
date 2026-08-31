@@ -319,6 +319,34 @@ defmodule TelemetryMetricsAppsignalTest do
     for tags <- tag_permutations, do: assert_receive({^ref, ^tags})
   end
 
+  test "specifying metric tags with a function ignores other metadata" do
+    metric = last_value("worker.queue.length", tags: &get_queue/1)
+    start_reporter(metrics: [metric])
+
+    parent = self()
+    ref = make_ref()
+
+    expect(AppsignalMock, :set_gauge, 2, fn
+      "worker.queue.length", 42, tags ->
+        send(parent, {ref, tags})
+        :ok
+    end)
+
+    assert capture_log(fn ->
+             :telemetry.execute(
+               [:worker, :queue],
+               %{length: 42},
+               %{queue: "mailer", ignored: "metadata"}
+             )
+           end) == ""
+
+    assert_receive({^ref, queue_tags})
+    assert queue_tags == %{queue: "MAILER"}
+
+    assert_receive({^ref, fallback_tags})
+    assert fallback_tags == %{queue: "any"}
+  end
+
   test "specifying metric tag values" do
     metric = last_value("worker.queue.length", tags: [:value], tag_values: &get_and_put_value/1)
     start_reporter(metrics: [metric])
@@ -364,6 +392,10 @@ defmodule TelemetryMetricsAppsignalTest do
 
   defp get_and_put_value(metadata) do
     Map.put_new(metadata, :value, "value")
+  end
+
+  defp get_queue(metadata) do
+    %{queue: String.upcase(metadata.queue)}
   end
 
   defp fetch_attached_handlers do
